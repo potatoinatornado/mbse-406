@@ -44,6 +44,41 @@ app.get("/search/:id", (req, res) => {
   })
 });
 
+const brain = require('brain.js')
+
+function getRandomArbitrary(num, otherNum) {
+  const mini = Math.min(num, otherNum)
+  const maxi = Math.max(num, otherNum)
+  return Math.random() * (maxi - mini) + mini;
+}
+
+app.get("/ai", (req, res) => {
+  var net1 = new brain.recurrent.LSTMTimeStep()
+
+
+  const initPrice = parseFloat(req.query.initPrice.substring(1))
+  const price = parseFloat(req.query.price.substring(1))
+
+  const normalise = (val, max, min) => (val - min) / (max - min);
+  const denormalize = (norm, max, min) => norm * (max - min) + min
+
+  const training = []
+  for (let i = 0; i < parseInt(req.query.quantity); i++) {
+    training.push(normalise(getRandomArbitrary(initPrice, price), price, initPrice))
+  }
+
+  console.log(training)
+
+  net1.train([
+    training
+  ], {log: true, iterations: 5000, errorThresh: .09});
+  const nextPrice = denormalize(net1.run(training), price, initPrice)
+
+  res.send({nextPrice})
+
+
+});
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client/build/index.html"));
 });
